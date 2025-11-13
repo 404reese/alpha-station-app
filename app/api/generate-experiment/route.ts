@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI } from '@google/genai';
 
-if (!process.env.GEMINI_API_KEY) {
-  console.error("Missing GEMINI_API_KEY in environment variables");
-}
+// Hardcoded Gemini API Key
+const geminiApiKey = '';
 
-const ai = process.env.GEMINI_API_KEY ? new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
+console.log('Using hardcoded Gemini API Key:', geminiApiKey);
+
+const ai = geminiApiKey ? new GoogleGenAI({
+  apiKey: geminiApiKey,
 }) : null;
 
 export async function POST(request: NextRequest) {
-  if (!process.env.GEMINI_API_KEY || !ai) {
+  if (!geminiApiKey || !ai) {
     return NextResponse.json(
-      { error: 'GEMINI_API_KEY is not configured. Please add it to your .env.local file and restart the server.' },
+      { error: 'Gemini API Key is not configured properly.' },
       { status: 500 }
     );
   }
@@ -63,7 +64,7 @@ Guidelines:
 - Return ONLY valid JSON, no additional text or markdown formatting.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-lite",
+      model: 'gemini-2.0-flash-lite',
       contents: prompt,
     });
 
@@ -76,7 +77,7 @@ Guidelines:
       );
     }
 
-    // Parse the JSON from the response (remove markdown formatting if present)
+    // Clean and parse the JSON result
     let cleanedText = generatedText.trim();
     if (cleanedText.startsWith('```json')) {
       cleanedText = cleanedText.replace(/```json\n?/g, '').replace(/```\n?$/g, '');
