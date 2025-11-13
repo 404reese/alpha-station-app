@@ -2,9 +2,9 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { mockExperiments } from "@/app/student/data/experiments";
+import { Experiment } from "@/app/student/data/experiments";
 import { StepsList, CodeEditor, Terminal, ExperimentInfo } from "@/components/student";
-import { ArrowLeft, BookOpen, FileText, Code2 } from "lucide-react";
+import { ArrowLeft, BookOpen, FileText, Code2, Loader2 } from "lucide-react";
 import { getThemeClasses } from "@/components/layout";
 import { useTheme } from "@/components/providers/ThemeProvider";
 
@@ -16,10 +16,9 @@ export default function ExperimentPage() {
   const themeClasses = getThemeClasses(isDark);
   const experimentId = params.id as string;
 
-  const experiment = useMemo(
-    () => mockExperiments.find((exp) => exp.id === experimentId),
-    [experimentId]
-  );
+  const [experiment, setExperiment] = useState<Experiment | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [currentStep, setCurrentStep] = useState(1);
   const [code, setCode] = useState("");
@@ -29,6 +28,98 @@ export default function ExperimentPage() {
   const [showFinalCode, setShowFinalCode] = useState(false);
   const [viewingFinalSolution, setViewingFinalSolution] = useState(false);
   const [activeTab, setActiveTab] = useState<"info" | "code">("info");
+  const [progressLoaded, setProgressLoaded] = useState(false);
+
+  // Fetch experiment data
+  useEffect(() => {
+    const fetchExperiment = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/experiments/${experimentId}`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to load experiment');
+        }
+
+        const data = await response.json();
+        
+        if (data.success && data.experiment) {
+          // Transform the experiment data to match expected format
+          const transformedExp: Experiment = {
+            id: data.experiment.id,
+            experiment_title: data.experiment.experiment_title,
+            subject: '', // Will be populated if needed
+            language: data.experiment.language,
+            total_steps: data.experiment.total_steps,
+            steps: data.experiment.steps,
+            pdfUrl: data.experiment.pdfUrl,
+            videoUrl: data.experiment.videoUrl,
+            description: data.experiment.description,
+          };
+          setExperiment(transformedExp);
+        } else {
+          throw new Error('Invalid experiment data');
+        }
+      } catch (err) {
+        console.error('Error fetching experiment:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load experiment');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (experimentId) {
+      fetchExperiment();
+    }
+  }, [experimentId]);
+
+  // Fetch student progress for this experiment
+  useEffect(() => {
+    const fetchProgress = async () => {
+      try {
+        const response = await fetch(`/api/progress?experimentId=${experimentId}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.progress) {
+            setCompletedSteps(data.progress.completedSteps || []);
+            setCurrentStep(data.progress.lastAccessedStep || 1);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching progress:', err);
+      }
+    };
+
+    if (experimentId) {
+      fetchProgress();
+    }
+  }, [experimentId]);
+
+  // Save progress whenever completedSteps or currentStep changes
+  useEffect(() => {
+    const saveProgress = async () => {
+      try {
+        await fetch('/api/progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            experimentId,
+            completedSteps,
+            lastAccessedStep: currentStep,
+          }),
+        });
+      } catch (err) {
+        console.error('Error saving progress:', err);
+      }
+    };
+
+    if (experimentId && experiment) {
+      // Debounce to avoid too many requests
+      const timeoutId = setTimeout(saveProgress, 1000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [experimentId, completedSteps, currentStep, experiment]);
 
   // Set initial tab from URL parameter
   useEffect(() => {
@@ -52,7 +143,7 @@ export default function ExperimentPage() {
   }, [experiment]);
 
   // Initialize code when experiment or step changes
-  useMemo(() => {
+  useEffect(() => {
     if (experiment) {
       if (viewingFinalSolution) {
         setCode(completeSolutionCode);
@@ -66,11 +157,22 @@ export default function ExperimentPage() {
   }, [experiment, currentStep, viewingFinalSolution, completeSolutionCode]);
 
   if (!experiment) {
+    if (loading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+          <div className="text-center">
+            <Loader2 className="w-12 h-12 animate-spin text-orange-500 mx-auto mb-4" />
+            <p className="text-slate-600 dark:text-slate-400">Loading experiment...</p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2">
-            Experiment Not Found
+            {error || 'Experiment Not Found'}
           </h2>
           <p className="text-slate-600 dark:text-slate-400 mb-4">
             The requested experiment could not be found.

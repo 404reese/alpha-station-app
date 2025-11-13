@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Editor from "@monaco-editor/react";
 import { Play, RotateCcw } from "lucide-react";
 
@@ -14,6 +14,11 @@ interface CodeEditorProps {
 export default function CodeEditor({ language, initialCode, onRun, onReset }: CodeEditorProps) {
   const [code, setCode] = useState(initialCode);
   const editorRef = useRef<any>(null);
+
+  // Update code when initialCode prop changes (when step changes)
+  useEffect(() => {
+    setCode(initialCode);
+  }, [initialCode]);
 
   const handleEditorDidMount = (editor: any) => {
     editorRef.current = editor;
