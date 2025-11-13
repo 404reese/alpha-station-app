@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { AppLayout, getThemeClasses } from '../../../../../components/layout';
 import { useTheme } from '../../../../../components/providers/ThemeProvider';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TestCase {
   input: string;
@@ -42,10 +43,24 @@ export default function ReviewExperimentPage() {
   const searchParams = useSearchParams();
   const { isDark } = useTheme();
   const themeClasses = getThemeClasses(isDark);
+  const { user, loading: authLoading } = useAuth();
 
   const [experimentData, setExperimentData] = useState<ExperimentData | null>(null);
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set([1]));
   const [loading, setLoading] = useState(true);
+
+  // Protect route - only teachers can access
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    } else if (!authLoading && user && user.role !== 'teacher') {
+      if (user.role === 'superadmin') {
+        router.push('/admin');
+      } else if (user.role === 'student') {
+        router.push('/student');
+      }
+    }
+  }, [user, authLoading, router]);
 
   useEffect(() => {
     const data = searchParams.get('data');
@@ -82,6 +97,23 @@ export default function ReviewExperimentPage() {
   const handleReject = () => {
     router.back();
   };
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-orange-500 mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated or not a teacher
+  if (!user || user.role !== 'teacher') {
+    return null;
+  }
 
   if (loading) {
     return (

@@ -1,6 +1,8 @@
 'use client'
-import React, { useState, useEffect } from 'react'
-import { User, Mail, Calendar, Settings, LogOut, X } from 'lucide-react'
+import React from 'react'
+import { User as UserIcon, Mail, Calendar, Settings, LogOut, X, Shield, GraduationCap, BookOpen } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
 
 interface UserProfileProps {
   isOpen: boolean
@@ -8,30 +10,34 @@ interface UserProfileProps {
   isDark?: boolean
 }
 
-interface User {
-  name: string
-  email: string
-  image: string
-  joinedDate: string
-}
-
 const UserProfileCard = ({ isOpen, onClose, isDark = false }: UserProfileProps) => {
-  const [user, setUser] = useState<User | null>(null)
+  const { user, logout } = useAuth();
+  const router = useRouter();
 
-  useEffect(() => {
-    // Get user from localStorage (mock data)
-    const userData = localStorage.getItem('user')
-    if (userData) {
-      setUser(JSON.parse(userData))
+  const handleLogout = async () => {
+    await logout();
+    onClose();
+  };
+
+  const getUserDisplayName = () => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    } else if (user?.firstName) {
+      return user.firstName;
     }
-  }, [])
+    return user?.email?.split('@')[0] || 'User';
+  };
 
-  const handleLogout = () => {
-    localStorage.removeItem('user')
-    setUser(null)
-    onClose()
-    window.location.href = '/'
-  }
+  const getRoleBadge = () => {
+    const roleConfig = {
+      superadmin: { icon: Shield, label: 'Super Admin', color: 'text-red-500 bg-red-500/10' },
+      teacher: { icon: BookOpen, label: 'Teacher', color: 'text-blue-500 bg-blue-500/10' },
+      student: { icon: GraduationCap, label: 'Student', color: 'text-green-500 bg-green-500/10' }
+    };
+    return roleConfig[user?.role || 'student'];
+  };
+
+  const role = getRoleBadge();
 
   const themeClasses = {
     bgPrimary: isDark ? 'bg-stone-800' : 'bg-white',
@@ -45,15 +51,10 @@ const UserProfileCard = ({ isOpen, onClose, isDark = false }: UserProfileProps) 
   if (!isOpen) return null
 
   return (
-    <>
-      {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black bg-opacity-50 z-40"
-        onClick={onClose}
-      />
-      
-      {/* Profile Card */}
-      <div className={`fixed top-20 right-6 w-80 ${themeClasses.bgPrimary} rounded-lg shadow-lg border ${themeClasses.border} z-50 overflow-hidden`}>
+    <div 
+      data-profile-card
+      className={`fixed top-20 right-6 w-80 ${themeClasses.bgPrimary} rounded-lg shadow-2xl border ${themeClasses.border} z-50 overflow-hidden`}
+    >
         {/* Header */}
         <div className={`${themeClasses.bgSecondary} px-6 py-4 border-b ${themeClasses.border}`}>
           <div className="flex items-center justify-between">
@@ -72,22 +73,28 @@ const UserProfileCard = ({ isOpen, onClose, isDark = false }: UserProfileProps) 
         {user ? (
           <div className="p-6">
             {/* User Info */}
-            <div className="flex items-center space-x-4 mb-6">
-              <div className="relative">
-                <img
-                  src={user.image}
-                  alt={user.name}
-                  className="w-16 h-16 rounded-full object-cover"
-                />
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-white dark:border-stone-800 rounded-full"></div>
+            <div className="mb-6">
+              <div className="flex items-center space-x-4 mb-3">
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                    {getUserDisplayName().charAt(0).toUpperCase()}
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-white dark:border-stone-800 rounded-full"></div>
+                </div>
+                <div>
+                  <h4 className={`text-xl font-semibold ${themeClasses.textPrimary}`}>
+                    {getUserDisplayName()}
+                  </h4>
+                  <p className={`text-sm ${themeClasses.textSecondary}`}>
+                    Active now
+                  </p>
+                </div>
               </div>
-              <div>
-                <h4 className={`text-xl font-semibold ${themeClasses.textPrimary}`}>
-                  {user.name}
-                </h4>
-                <p className={`text-sm ${themeClasses.textSecondary}`}>
-                  Active now
-                </p>
+              
+              {/* Role Badge */}
+              <div className={`inline-flex items-center space-x-2 px-3 py-1.5 rounded-full ${role.color}`}>
+                <role.icon className="w-4 h-4" />
+                <span className="text-xs font-medium">{role.label}</span>
               </div>
             </div>
 
@@ -99,33 +106,42 @@ const UserProfileCard = ({ isOpen, onClose, isDark = false }: UserProfileProps) 
                   {user.email}
                 </span>
               </div>
-              <div className="flex items-center space-x-3">
-                <Calendar className={`w-4 h-4 ${themeClasses.textSecondary}`} />
-                <span className={`text-sm ${themeClasses.textSecondary}`}>
-                  Joined {new Date(user.joinedDate).toLocaleDateString()}
-                </span>
-              </div>
+              {user.lastLogin && (
+                <div className="flex items-center space-x-3">
+                  <Calendar className={`w-4 h-4 ${themeClasses.textSecondary}`} />
+                  <span className={`text-sm ${themeClasses.textSecondary}`}>
+                    Last login: {new Date(user.lastLogin).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}
             <div className="space-y-2">
               <button 
                 onClick={() => {
-                  window.location.href = '/profile'
-                  onClose()
+                  router.push('/profile');
+                  onClose();
                 }}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg ${themeClasses.hoverBg} transition-colors`}
               >
-                <User className={`w-4 h-4 ${themeClasses.textSecondary}`} />
+                <UserIcon className={`w-4 h-4 ${themeClasses.textSecondary}`} />
                 <span className={`text-sm ${themeClasses.textPrimary}`}>
                   View Profile
                 </span>
               </button>
               
-              <button className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg ${themeClasses.hoverBg} transition-colors`}>
+              <button 
+                onClick={() => {
+                  const dashboardRoute = user.role === 'superadmin' ? '/admin' : user.role === 'teacher' ? '/dashboard' : '/student';
+                  router.push(dashboardRoute);
+                  onClose();
+                }}
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg ${themeClasses.hoverBg} transition-colors`}
+              >
                 <Settings className={`w-4 h-4 ${themeClasses.textSecondary}`} />
                 <span className={`text-sm ${themeClasses.textPrimary}`}>
-                  Settings
+                  Dashboard
                 </span>
               </button>
               
@@ -145,21 +161,23 @@ const UserProfileCard = ({ isOpen, onClose, isDark = false }: UserProfileProps) 
         ) : (
           <div className="p-6 text-center">
             <div className={`w-16 h-16 mx-auto mb-4 ${themeClasses.bgSecondary} rounded-full flex items-center justify-center`}>
-              <User className={`w-8 h-8 ${themeClasses.textSecondary}`} />
+              <UserIcon className={`w-8 h-8 ${themeClasses.textSecondary}`} />
             </div>
             <p className={`text-sm ${themeClasses.textSecondary} mb-4`}>
               You're not signed in
             </p>
             <button
-              onClick={() => window.location.href = '/auth'}
-              className="w-full px-4 py-2 bg-stone-600 hover:bg-stone-700 dark:bg-stone-600 dark:hover:bg-stone-500 text-white rounded-md transition-colors"
+              onClick={() => {
+                router.push('/login');
+                onClose();
+              }}
+              className="w-full px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-colors"
             >
               Sign In
             </button>
           </div>
         )}
       </div>
-    </>
   )
 }
 

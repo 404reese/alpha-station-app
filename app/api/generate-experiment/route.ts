@@ -1,10 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from "@google/genai";
 
-// The client gets the API key from the environment variable `GEMINI_API_KEY`.
-const ai = new GoogleGenAI({});
+if (!process.env.GEMINI_API_KEY) {
+  console.error("Missing GEMINI_API_KEY in environment variables");
+}
+
+const ai = process.env.GEMINI_API_KEY ? new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+}) : null;
 
 export async function POST(request: NextRequest) {
+  if (!process.env.GEMINI_API_KEY || !ai) {
+    return NextResponse.json(
+      { error: 'GEMINI_API_KEY is not configured. Please add it to your .env.local file and restart the server.' },
+      { status: 500 }
+    );
+  }
+
   try {
     const { topic, description, language } = await request.json();
 

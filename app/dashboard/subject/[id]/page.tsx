@@ -1,16 +1,18 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { 
   ArrowLeft,
   Plus,
   Beaker,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
 import { AppLayout, getThemeClasses } from '../../../../components/layout';
 import { useTheme } from '../../../../components/providers/ThemeProvider';
 import { CreateExperimentModal } from '../../../../components/dashboard/CreateExperimentModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Experiment {
   id: string;
@@ -19,90 +21,127 @@ interface Experiment {
   language: string;
 }
 
-const dummyExperiments: { [key: string]: Experiment[] } = {
-  '1': [
-    {
-      id: '1',
-      title: 'Linked List Implementation',
-      description: 'Implement singly and doubly linked lists with basic operations',
-      language: 'Python'
-    },
-    {
-      id: '2',
-      title: 'Binary Search Tree',
-      description: 'Create a BST with insertion, deletion, and traversal methods',
-      language: 'C++'
-    },
-    {
-      id: '3',
-      title: 'Graph Algorithms',
-      description: 'Implement DFS, BFS, and shortest path algorithms',
-      language: 'Java'
-    }
-  ],
-  '2': [
-    {
-      id: '4',
-      title: 'Todo App with React',
-      description: 'Build a full-featured todo application using React hooks',
-      language: 'JavaScript'
-    },
-    {
-      id: '5',
-      title: 'REST API Development',
-      description: 'Create a RESTful API with Express.js and MongoDB',
-      language: 'JavaScript'
-    }
-  ],
-  '3': [
-    {
-      id: '6',
-      title: 'SQL Query Practice',
-      description: 'Practice complex SQL queries with joins and subqueries',
-      language: 'SQL'
-    },
-    {
-      id: '7',
-      title: 'Database Normalization',
-      description: 'Normalize a database schema to 3NF',
-      language: 'SQL'
-    }
-  ]
-};
 
-const subjectNames: { [key: string]: string } = {
-  '1': 'Data Structures & Algorithms',
-  '2': 'Web Development',
-  '3': 'Database Management Systems'
-};
 
 export default function SubjectDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { isDark } = useTheme();
   const themeClasses = getThemeClasses(isDark);
+  const { user, loading } = useAuth();
   
   const subjectId = params.id as string;
-  const [experiments, setExperiments] = useState<Experiment[]>(dummyExperiments[subjectId] || []);
+  const [experiments, setExperiments] = useState<Experiment[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const handleCreateExperiment = (experiment: Omit<Experiment, 'id'>) => {
-    const newExperiment: Experiment = {
-      id: Date.now().toString(),
-      ...experiment
-    };
-    setExperiments([...experiments, newExperiment]);
-    setShowCreateModal(false);
+  // Protect route - only teachers can access
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    } else if (!loading && user && user.role !== 'teacher') {
+      if (user.role === 'superadmin') {
+        router.push('/admin');
+      } else if (user.role === 'student') {
+        router.push('/student');
+      }
+    }
+  }, [user, loading, router]);
+
+  // Fetch experiments from API
+  useEffect(() => {
+    if (user && user.role === 'teacher' && subjectId) {
+      fetchExperiments();
+    }
+  }, [user, subjectId]);
+
+  const fetchExperiments = async () => {
+    try {
+      setDataLoading(true);
+      const response = await fetch(`/api/experiments?subjectId=${subjectId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setExperiments(data.experiments);
+      } else {
+        setError('Failed to load experiments');
+      }
+    } catch (err) {
+      setError('Error loading experiments');
+    } finally {
+      setDataLoading(false);
+    }
   };
 
-  const handleDeleteExperiment = (id: string) => {
-    setExperiments(experiments.filter(exp => exp.id !== id));
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-orange-500 mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated or not a teacher
+  if (!user || user.role !== 'teacher') {
+    return null;
+  }
+
+  const handleCreateExperiment = async (experiment: Omit<Experiment, 'id'>) => {
+    try {
+      const response = await fetch('/api/experiments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...experiment,
+          subjectId,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setExperiments([data.experiment, ...experiments]);
+        setShowCreateModal(false);
+        setError('');
+      } else {
+        setError('Failed to create experiment');
+      }
+    } catch (err) {
+      setError('Error creating experiment');
+    }
+  };
+
+  const handleDeleteExperiment = async (id: string) => {
+    try {
+      const response = await fetch(`/api/experiments?id=${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setExperiments(experiments.filter(exp => exp.id !== id));
+        setError('');
+      } else {
+        setError('Failed to delete experiment');
+      }
+    } catch (err) {
+      setError('Error deleting experiment');
+    }
   };
 
   return (
     <AppLayout activePage="Dashboard" showFooter={true}>
       <div className="p-6">
         <div className="max-w-6xl mx-auto">
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-4 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
           {/* Header */}
           <div className="mb-6">
             <button
@@ -116,7 +155,7 @@ export default function SubjectDetailPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className={`text-3xl font-bold ${themeClasses.textPrimary} mb-2`}>
-                  {subjectNames[subjectId] || 'Subject'}
+                  Subject Details
                 </h1>
                 <p className={`${themeClasses.textMuted}`}>
                   Manage experiments and assignments for this subject
@@ -133,7 +172,12 @@ export default function SubjectDetailPage() {
           </div>
 
           {/* Experiments Grid */}
-          {experiments.length === 0 ? (
+          {dataLoading ? (
+            <div className={`${themeClasses.bgSecondary} border ${themeClasses.borderPrimary} rounded-lg p-12 text-center`}>
+              <Loader2 className={`w-12 h-12 ${themeClasses.textMuted} mx-auto mb-4 animate-spin`} />
+              <p className={themeClasses.textMuted}>Loading experiments...</p>
+            </div>
+          ) : experiments.length === 0 ? (
             <div className={`${themeClasses.bgSecondary} border ${themeClasses.borderPrimary} rounded-lg p-12 text-center`}>
               <Beaker className={`w-12 h-12 ${themeClasses.textMuted} mx-auto mb-4`} />
               <h3 className={`text-lg font-medium ${themeClasses.textPrimary} mb-2`}>No experiments yet</h3>

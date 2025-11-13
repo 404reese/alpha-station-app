@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FileText, 
   Code, 
@@ -17,11 +17,13 @@ import {
   Database,
   Cpu,
   Brain,
-  Network
+  Network,
+  Loader2
 } from 'lucide-react';
 import { AppLayout, getThemeClasses } from '../../components/layout';
 import { useTheme } from '../../components/providers/ThemeProvider';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Subject {
   id: string;
@@ -49,36 +51,15 @@ const iconMap: { [key: string]: any } = {
   network: Network
 };
 
-const dummySubjects: Subject[] = [
-  {
-    id: '1',
-    subjectName: 'Data Structures & Algorithms',
-    className: 'CS-2024 Section A',
-    collaborators: ['john.doe@example.com', 'jane.smith@example.com'],
-    icon: 'brain'
-  },
-  {
-    id: '2',
-    subjectName: 'Web Development',
-    className: 'CS-2024 Section B',
-    collaborators: ['alex.kumar@example.com'],
-    icon: 'code'
-  },
-  {
-    id: '3',
-    subjectName: 'Database Management Systems',
-    className: 'CS-2024 Section A',
-    collaborators: [],
-    icon: 'database'
-  }
-];
+
 
 export default function TeacherDashboard() {
   const { isDark } = useTheme();
   const themeClasses = getThemeClasses(isDark);
   const router = useRouter();
+  const { user, loading } = useAuth();
 
-  const [subjects, setSubjects] = useState<Subject[]>(dummySubjects);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [formData, setFormData] = useState({
     subjectName: '',
@@ -87,21 +68,93 @@ export default function TeacherDashboard() {
     icon: 'beaker'
   });
   const [collaborators, setCollaborators] = useState<string[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const handleCreateSubject = (e: React.FormEvent) => {
+  // Protect route - only teachers can access
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    } else if (!loading && user && user.role !== 'teacher') {
+      // Redirect non-teachers to their appropriate dashboard
+      if (user.role === 'superadmin') {
+        router.push('/admin');
+      } else if (user.role === 'student') {
+        router.push('/student');
+      }
+    }
+  }, [user, loading, router]);
+
+  // Fetch subjects from API
+  useEffect(() => {
+    if (user && user.role === 'teacher') {
+      fetchSubjects();
+    }
+  }, [user]);
+
+  const fetchSubjects = async () => {
+    try {
+      setDataLoading(true);
+      const response = await fetch('/api/subjects');
+      if (response.ok) {
+        const data = await response.json();
+        setSubjects(data.subjects);
+      } else {
+        setError('Failed to load subjects');
+      }
+    } catch (err) {
+      setError('Error loading subjects');
+    } finally {
+      setDataLoading(false);
+    }
+  };
+
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-orange-500 mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render dashboard if not authenticated or not a teacher
+  if (!user || user.role !== 'teacher') {
+    return null;
+  }
+
+
+  const handleCreateSubject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.subjectName && formData.className) {
-      const newSubject: Subject = {
-        id: Date.now().toString(),
-        subjectName: formData.subjectName,
-        className: formData.className,
-        collaborators: [...collaborators],
-        icon: formData.icon
-      };
-      setSubjects([...subjects, newSubject]);
-      setFormData({ subjectName: '', className: '', collaboratorEmail: '', icon: 'beaker' });
-      setCollaborators([]);
-      setShowCreateForm(false);
+      try {
+        const response = await fetch('/api/subjects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subjectName: formData.subjectName,
+            className: formData.className,
+            collaborators: [...collaborators],
+            icon: formData.icon
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setSubjects([data.subject, ...subjects]);
+          setFormData({ subjectName: '', className: '', collaboratorEmail: '', icon: 'beaker' });
+          setCollaborators([]);
+          setShowCreateForm(false);
+          setError('');
+        } else {
+          setError('Failed to create subject');
+        }
+      } catch (err) {
+        setError('Error creating subject');
+      }
     }
   };
 
@@ -116,14 +169,34 @@ export default function TeacherDashboard() {
     setCollaborators(collaborators.filter(c => c !== email));
   };
 
-  const deleteSubject = (id: string) => {
-    setSubjects(subjects.filter(s => s.id !== id));
+  const deleteSubject = async (id: string) => {
+    try {
+      const response = await fetch(`/api/subjects?id=${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setSubjects(subjects.filter(s => s.id !== id));
+        setError('');
+      } else {
+        setError('Failed to delete subject');
+      }
+    } catch (err) {
+      setError('Error deleting subject');
+    }
   };
 
   return (
     <AppLayout activePage="Dashboard" showFooter={true}>
       <div className="p-6">
         <div className="max-w-6xl mx-auto">
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-4 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -301,7 +374,12 @@ export default function TeacherDashboard() {
               {/* Subjects List */}
               <div className="mb-6">
                 <h2 className={`text-xl font-semibold ${themeClasses.textPrimary} mb-4`}>My Subjects</h2>
-                {subjects.length === 0 ? (
+                {dataLoading ? (
+                  <div className={`${themeClasses.bgSecondary} border ${themeClasses.borderPrimary} rounded-lg p-12 text-center`}>
+                    <Loader2 className={`w-12 h-12 ${themeClasses.textMuted} mx-auto mb-4 animate-spin`} />
+                    <p className={themeClasses.textMuted}>Loading subjects...</p>
+                  </div>
+                ) : subjects.length === 0 ? (
                   <div className={`${themeClasses.bgSecondary} border ${themeClasses.borderPrimary} rounded-lg p-12 text-center`}>
                     <BookOpen className={`w-12 h-12 ${themeClasses.textMuted} mx-auto mb-4`} />
                     <h3 className={`text-lg font-medium ${themeClasses.textPrimary} mb-2`}>No subjects yet</h3>

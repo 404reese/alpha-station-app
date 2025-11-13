@@ -103,12 +103,13 @@ export default function Sidebar({ isDark, activePage = "Study Resources", collap
       {/* Logo */}
       <div className={`${collapsed ? 'p-3' : 'p-6'} border-b ${themeClasses.borderSecondary}`}>
         <div className="flex items-center">
-          <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+          <img src="/11.png" alt="" />
+          {/* <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
             <div className={`w-4 h-4 rounded-sm ${themeClasses.bgSecondary}`}></div>
-          </div>
+          </div> */}
           {!collapsed && (
             <div className="ml-3">
-              <h1 className={`text-xl font-semibold ${themeClasses.textPrimary}`}>OfCampus</h1>
+              <h1 className={`text-xl font-semibold ${themeClasses.textPrimary}`}></h1>
             </div>
           )}
         </div>

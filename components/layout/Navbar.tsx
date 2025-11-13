@@ -1,7 +1,8 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { Quote, Moon, Sun, Menu, ChevronLeft, ChevronRight, User } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Quote, Moon, Sun, Menu, ChevronLeft, ChevronRight, User, ChevronDown } from 'lucide-react';
 import UserProfileCard from '../auth/UserProfileCard';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NavbarProps {
   isDark: boolean;
@@ -11,13 +12,6 @@ interface NavbarProps {
   sidebarCollapsed?: boolean;
 }
 
-interface User {
-  name: string;
-  email: string;
-  image: string;
-  joinedDate: string;
-}
-
 export default function Navbar({ 
   isDark, 
   onToggleTheme, 
@@ -25,43 +19,39 @@ export default function Navbar({
   onToggleSidebarVisibility, 
   sidebarCollapsed = false 
 }: NavbarProps) {
-  const [user, setUser] = useState<User | null>(null);
+  const { user } = useAuth();
   const [showProfileCard, setShowProfileCard] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
+  // Close dropdown when clicking outside
   useEffect(() => {
-    // Check for user in localStorage
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-
-    // Listen for storage changes (when user logs in/out)
-    const handleStorageChange = () => {
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        setUser(JSON.parse(userData));
-      } else {
-        setUser(null);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showProfileCard && buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
+        // Check if click is not on the profile card itself
+        const profileCard = document.querySelector('[data-profile-card]');
+        if (profileCard && !profileCard.contains(event.target as Node)) {
+          setShowProfileCard(false);
+        }
       }
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Also listen for custom events (for same-tab updates)
-    window.addEventListener('userChanged', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('userChanged', handleStorageChange);
-    };
-  }, []);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showProfileCard]);
 
   const handleLoginClick = () => {
     if (user) {
-      setShowProfileCard(true);
+      setShowProfileCard(!showProfileCard);
     } else {
-      window.location.href = '/auth';
+      window.location.href = '/login';
     }
+  };
+
+  const getUserDisplayName = () => {
+    if (user?.firstName) {
+      return user.firstName;
+    }
+    return user?.email?.split('@')[0] || 'User';
   };
   const themeClasses = {
     bgSecondary: isDark ? 'bg-stone-800' : 'bg-white',
@@ -112,18 +102,17 @@ export default function Navbar({
         <a href="#" className={`text-sm ${themeClasses.textMuted} ${themeClasses.hoverText} transition-colors`}>
           FAQs
         </a> */}
-        <button onClick={handleLoginClick} className={`px-3 py-1.5 text-sm border ${themeClasses.borderPrimary} rounded-md ${themeClasses.hoverBg} transition-colors`}>
+        <button onClick={handleLoginClick} ref={buttonRef} className={`px-3 py-1.5 text-sm border ${themeClasses.borderPrimary} rounded-md ${themeClasses.hoverBg} transition-colors`}>
           {user ? (
             <div className="flex items-center space-x-2">
-              <img
-                src={user.image}
-                alt={user.name}
-                className="w-5 h-5 rounded-full"
-              />
-              <span>{user.name.split(' ')[0]}</span>
+              <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-semibold">
+                {getUserDisplayName().charAt(0).toUpperCase()}
+              </div>
+              <span className={themeClasses.textPrimary}>Welcome, {getUserDisplayName()}</span>
+              <ChevronDown className={`w-4 h-4 ${themeClasses.textMuted}`} />
             </div>
           ) : (
-            'Login'
+            <span className={themeClasses.textPrimary}>Login</span>
           )}
         </button>
         <button 
