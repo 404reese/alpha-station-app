@@ -222,11 +222,17 @@ export default function SubjectDetailPage() {
                     
                     {/* Actions */}
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <button className="text-sm text-orange-600 hover:text-orange-700 font-medium px-3 py-1">
+                      <button 
+                        onClick={() => router.push(`/dashboard/subject/${subjectId}/experiment/${experiment.id}`)}
+                        className="text-sm text-orange-600 hover:text-orange-700 font-medium px-3 py-1"
+                      >
                         Open →
                       </button>
                       <button
-                        onClick={() => handleDeleteExperiment(experiment.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteExperiment(experiment.id);
+                        }}
                         className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-600 transition-all p-1"
                       >
                         <X className="w-4 h-4" />
