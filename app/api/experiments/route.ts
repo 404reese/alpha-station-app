@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import connectDB from '@/lib/mongodb';
 import Experiment from '@/models/Experiment';
+import Subject from '@/models/Subject';
+import User from '@/models/User';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
 
-// GET all experiments for a subject
+// GET all experiments for a subject (only visible to teacher creator and collaborators)
 export async function GET(request: NextRequest) {
   try {
     await connectDB();
@@ -37,6 +39,37 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Get the subject to check if user is owner or collaborator
+    const subject = await Subject.findById(subjectId).lean();
+
+    if (!subject) {
+      return NextResponse.json(
+        { error: 'Subject not found' },
+        { status: 404 }
+      );
+    }
+
+    // Get user to check email for collaborator access
+    const user = await User.findById(decoded.userId).select('email').lean();
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if user is teacher/owner or collaborator
+    const isOwner = subject.teacherId === decoded.userId;
+    const isCollaborator = subject.collaborators.includes(user.email);
+
+    if (!isOwner && !isCollaborator) {
+      return NextResponse.json(
+        { error: 'Unauthorized to view experiments for this subject' },
+        { status: 403 }
+      );
+    }
+
     // Get experiments for this subject
     const experiments = await Experiment.find({ subjectId })
       .sort({ createdAt: -1 })
@@ -49,6 +82,7 @@ export async function GET(request: NextRequest) {
       description: exp.description,
       language: exp.language,
       subjectId: exp.subjectId,
+      teacherId: exp.teacherId,
       createdAt: exp.createdAt,
     }));
 
@@ -95,12 +129,63 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { title, description, language, subjectId } = await request.json();
+    const { title, description, language, subjectId, steps, pdfUrl, videoUrl } = await request.json();
 
-    if (!title || !description || !language || !subjectId) {
+    console.log('📥 Received experiment data:', { 
+      title, 
+      language,
+      subjectId,
+      stepsCount: steps?.length,
+      stepsIsArray: Array.isArray(steps),
+      hasSteps: !!steps
+    });
+    
+    if (steps && steps.length > 0) {
+      console.log('📋 First step structure:', {
+        step_no: steps[0].step_no,
+        title: steps[0].title,
+        hasInstruction: !!steps[0].instruction,
+        hasStarterCode: !!steps[0].starter_code,
+        hasSolutionCode: !!steps[0].solution_code,
+        testCasesCount: steps[0].test_cases?.length
+      });
+    }
+
+    if (!title || !description || !language || !subjectId || !steps || !Array.isArray(steps) || steps.length === 0) {
+      console.error('❌ Validation failed:', { title, description, language, subjectId, stepsIsArray: Array.isArray(steps), stepsLength: steps?.length });
       return NextResponse.json(
-        { error: 'All fields are required' },
+        { error: 'Title, description, language, subjectId, and at least one step are required' },
         { status: 400 }
+      );
+    }
+
+    // Verify the subject exists and user has access
+    const subject = await Subject.findById(subjectId).lean();
+    
+    if (!subject) {
+      return NextResponse.json(
+        { error: 'Subject not found' },
+        { status: 404 }
+      );
+    }
+
+    // Get user email for collaborator check
+    const user = await User.findById(decoded.userId).select('email').lean();
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    const isOwner = subject.teacherId === decoded.userId;
+    const isCollaborator = subject.collaborators.includes(user.email);
+
+    if (!isOwner && !isCollaborator) {
+      return NextResponse.json(
+        { error: 'Unauthorized to create experiments for this subject' },
+        { status: 403 }
       );
     }
 
@@ -111,7 +196,12 @@ export async function POST(request: NextRequest) {
       language,
       subjectId,
       teacherId: decoded.userId,
+      steps,
+      pdfUrl,
+      videoUrl,
     });
+
+    console.log('✅ Experiment created successfully with', steps?.length || 0, 'steps');
 
     return NextResponse.json({
       success: true,
@@ -121,6 +211,10 @@ export async function POST(request: NextRequest) {
         description: experiment.description,
         language: experiment.language,
         subjectId: experiment.subjectId,
+        teacherId: experiment.teacherId,
+        steps: steps,
+        pdfUrl: experiment.pdfUrl,
+        videoUrl: experiment.videoUrl,
         createdAt: experiment.createdAt,
       },
     });
@@ -172,18 +266,26 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Delete experiment (only if it belongs to the teacher)
-    const result = await Experiment.findOneAndDelete({
-      _id: experimentId,
-      teacherId: decoded.userId,
-    });
+    // Get the experiment first
+    const experiment = await Experiment.findById(experimentId).lean();
 
-    if (!result) {
+    if (!experiment) {
       return NextResponse.json(
-        { error: 'Experiment not found or unauthorized' },
+        { error: 'Experiment not found' },
         { status: 404 }
       );
     }
+
+    // Only the creator (teacher who created it) can delete
+    if (experiment.teacherId !== decoded.userId) {
+      return NextResponse.json(
+        { error: 'Only the experiment creator can delete it' },
+        { status: 403 }
+      );
+    }
+
+    // Delete experiment
+    await Experiment.findByIdAndDelete(experimentId);
 
     return NextResponse.json({
       success: true,
