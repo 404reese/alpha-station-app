@@ -1,0 +1,98 @@
+[
+  {
+    "id": 1,
+    "title": "Operating Systems Introduction & Concepts",
+    "semester": "Semester 5",
+    "subject": "Operating Systems",
+    "department": "Computer Science",
+    "upvotes": 32,
+    "views": 445,
+    "duration": "45:30",
+    "videoId": "os_intro_concepts",
+    "topicId": "os_topic_1"
+  },
+  {
+    "id": 2,
+    "title": "Process Management and Scheduling",
+    "semester": "Semester 5",
+    "subject": "Operating Systems",
+    "department": "Computer Science",
+    "upvotes": 28,
+    "views": 387,
+    "duration": "52:15",
+    "videoId": "os_process_mgmt",
+    "topicId": "os_topic_2"
+  },
+  {
+    "id": 3,
+    "title": "Arrays and Linked Lists - DSA Basics",
+    "semester": "Semester 3",
+    "subject": "DSA",
+    "department": "Computer Science",
+    "upvotes": 41,
+    "views": 523,
+    "duration": "38:45",
+    "videoId": "dsa_arrays_lists",
+    "topicId": "dsa_topic_1"
+  },
+  {
+    "id": 4,
+    "title": "Trees and Graph Algorithms",
+    "semester": "Semester 3",
+    "subject": "DSA",
+    "department": "Computer Science",
+    "upvotes": 35,
+    "views": 467,
+    "duration": "67:20",
+    "videoId": "dsa_trees_graphs",
+    "topicId": "dsa_topic_2"
+  },
+  {
+    "id": 5,
+    "title": "Database Normalization Techniques",
+    "semester": "Semester 4",
+    "subject": "DBMS",
+    "department": "Computer Science",
+    "upvotes": 23,
+    "views": 289,
+    "duration": "41:10",
+    "videoId": "dbms_normalization",
+    "topicId": "dbms_topic_1"
+  },
+  {
+    "id": 6,
+    "title": "SQL Queries and Joins",
+    "semester": "Semester 4",
+    "subject": "DBMS",
+    "department": "Computer Science",
+    "upvotes": 29,
+    "views": 356,
+    "duration": "55:30",
+    "videoId": "dbms_sql_joins",
+    "topicId": "dbms_topic_2"
+  },
+  {
+    "id": 7,
+    "title": "TCP/IP Protocol Suite",
+    "semester": "Semester 6",
+    "subject": "Computer Networks",
+    "department": "Computer Science",
+    "upvotes": 19,
+    "views": 234,
+    "duration": "49:45",
+    "videoId": "cn_tcpip",
+    "topicId": "cn_topic_1"
+  },
+  {
+    "id": 8,
+    "title": "Network Security Fundamentals",
+    "semester": "Semester 6",
+    "subject": "Computer Networks",
+    "department": "Computer Science",
+    "upvotes": 26,
+    "views": 312,
+    "duration": "43:20",
+    "videoId": "cn_security",
+    "topicId": "cn_topic_2"
+  }
+]

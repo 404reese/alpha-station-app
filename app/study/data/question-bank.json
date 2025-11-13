@@ -1,0 +1,49 @@
+[
+  {
+    "id": 1,
+    "title": "Operating Systems Question Bank",
+    "semester": "Semester 5",
+    "subject": "Operating Systems",
+    "department": "Computer Science",
+    "upvotes": 20,
+    "views": 178,
+    "link": "https://drive.google.com/file/d/1osqb789/view?usp=drive_link"
+  },
+  {
+    "id": 2,
+    "title": "DSA Practice Questions",
+    "semester": "Semester 3",
+    "subject": "DSA",
+    "department": "Computer Science",
+    "upvotes": 31,
+    "views": 245
+  },
+  {
+    "id": 3,
+    "title": "DBMS Question Collection",
+    "semester": "Semester 4",
+    "subject": "DBMS",
+    "department": "Computer Science",
+    "upvotes": 14,
+    "views": 89
+  },
+  {
+    "id": 4,
+    "title": "Computer Networks Practice Set",
+    "semester": "Semester 6",
+    "subject": "Computer Networks",
+    "department": "Computer Science",
+    "upvotes": 18,
+    "views": 134,
+    "link": "https://drive.google.com/file/d/1cnqb123/view?usp=drive_link"
+  },
+  {
+    "id": 5,
+    "title": "Software Engineering Question Bank",
+    "semester": "Semester 6",
+    "subject": "Software Engineering",
+    "department": "Computer Science",
+    "upvotes": 22,
+    "views": 167
+  }
+]

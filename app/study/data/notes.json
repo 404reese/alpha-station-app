@@ -1,0 +1,59 @@
+[
+  {
+    "id": 1,
+    "title": "Operating Systems Complete Notes",
+    "semester": "Semester 5",
+    "subject": "Operating Systems",
+    "department": "Computer Science",
+    "upvotes": 15,
+    "views": 234,
+    "link": "https://drive.google.com/file/d/1K_x_1N2WeJ2WJN7gnf2mMe9gHfhq_I8n/view?usp=drive_link"
+  },
+  {
+    "id": 2,
+    "title": "Data Structures and Algorithms Handbook",
+    "semester": "Semester 3",
+    "subject": "DSA",
+    "department": "Computer Science",
+    "upvotes": 23,
+    "views": 187,
+    "link": "https://drive.google.com/file/d/1example123/view?usp=drive_link"
+  },
+  {
+    "id": 3,
+    "title": "Database Management Systems Guide",
+    "semester": "Semester 4",
+    "subject": "DBMS",
+    "department": "Computer Science",
+    "upvotes": 18,
+    "views": 156
+  },
+  {
+    "id": 4,
+    "title": "Computer Networks Complete Study Material",
+    "semester": "Semester 6",
+    "subject": "Computer Networks",
+    "department": "Computer Science",
+    "upvotes": 12,
+    "views": 98
+  },
+  {
+    "id": 5,
+    "title": "Software Engineering Comprehensive Notes",
+    "semester": "Semester 6",
+    "subject": "Software Engineering",
+    "department": "Computer Science",
+    "upvotes": 21,
+    "views": 143,
+    "link": "https://drive.google.com/file/d/1softwareeng456/view?usp=drive_link"
+  },
+  {
+    "id": 6,
+    "title": "Computer Architecture and Organization",
+    "semester": "Semester 4",
+    "subject": "COA",
+    "department": "Computer Science",
+    "upvotes": 16,
+    "views": 112
+  }
+]

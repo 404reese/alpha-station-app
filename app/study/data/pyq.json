@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "title": "Operating Systems PYQ 2020-2023",
+    "semester": "Semester 5",
+    "subject": "Operating Systems",
+    "department": "Computer Science",
+    "upvotes": 27,
+    "views": 298,
+    "link": "https://drive.google.com/file/d/1ospyq2023/view?usp=drive_link"
+  },
+  {
+    "id": 2,
+    "title": "Data Structures PYQ Collection",
+    "semester": "Semester 3",
+    "subject": "DSA",
+    "department": "Computer Science",
+    "upvotes": 19,
+    "views": 201
+  },
+  {
+    "id": 3,
+    "title": "DBMS Previous Year Papers",
+    "semester": "Semester 4",
+    "subject": "DBMS",
+    "department": "Computer Science",
+    "upvotes": 11,
+    "views": 123
+  },
+  {
+    "id": 4,
+    "title": "Computer Networks PYQ 2019-2023",
+    "semester": "Semester 6",
+    "subject": "Computer Networks",
+    "department": "Computer Science",
+    "upvotes": 16,
+    "views": 154
+  },
+  {
+    "id": 5,
+    "title": "Software Engineering PYQ 2021-2023",
+    "semester": "Semester 6",
+    "subject": "Software Engineering",
+    "department": "Computer Science",
+    "upvotes": 24,
+    "views": 189,
+    "link": "https://drive.google.com/file/d/1sepyq2023/view?usp=drive_link"
+  },
+  {
+    "id": 6,
+    "title": "Computer Architecture PYQ Collection",
+    "semester": "Semester 4",
+    "subject": "COA",
+    "department": "Computer Science",
+    "upvotes": 13,
+    "views": 97
+  }
+]
