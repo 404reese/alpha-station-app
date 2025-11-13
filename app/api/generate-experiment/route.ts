@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 
-// Hardcoded Gemini API Key
-const geminiApiKey = '';
+const geminiApiKey = process.env.GEMINI_API_KEY;
 
-console.log('Using hardcoded Gemini API Key:', geminiApiKey);
+if (!geminiApiKey) {
+  console.error('❌ Gemini API key is missing. Please set GEMINI_API_KEY in .env.local');
+}
 
-const ai = geminiApiKey ? new GoogleGenAI({
-  apiKey: geminiApiKey,
-}) : null;
+const ai = geminiApiKey
+  ? new GoogleGenAI({
+      apiKey: geminiApiKey,
+    })
+  : null;
 
 export async function POST(request: NextRequest) {
   if (!geminiApiKey || !ai) {
@@ -69,7 +72,7 @@ Guidelines:
     });
 
     const generatedText = response.text;
-    
+
     if (!generatedText) {
       return NextResponse.json(
         { error: 'No content generated from AI' },
@@ -77,7 +80,6 @@ Guidelines:
       );
     }
 
-    // Clean and parse the JSON result
     let cleanedText = generatedText.trim();
     if (cleanedText.startsWith('```json')) {
       cleanedText = cleanedText.replace(/```json\n?/g, '').replace(/```\n?$/g, '');
@@ -86,8 +88,8 @@ Guidelines:
     }
 
     const experimentData = JSON.parse(cleanedText);
-
     return NextResponse.json(experimentData);
+
   } catch (error) {
     console.error('Error generating experiment:', error);
     return NextResponse.json(
